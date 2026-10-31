@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WMS Demo – 4 phân hệ</title>
+<style>
+:root{--bg:#eef2f5;--cd:#fff;--tx:#14202b;--mu:#5b6b79;--bd:#d5dde4;--ac:#0b5c6b;--ac2:#dcedf0;--wa:#9a4a05;--wb:#fdeed9;--er:#a32d2d;--eb:#fbe6e6;--ok:#276749;--ob:#e1f1e7}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1519;--cd:#182128;--tx:#e6edf2;--mu:#93a4b2;--bd:#2a3944;--ac:#6cc3d3;--ac2:#12333b;--wa:#f5b970;--wb:#3a2610;--er:#f19a9a;--eb:#3d1a1a;--ok:#86d4a4;--ob:#15301f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:980px;margin:0 auto;padding:16px}
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.top b{font-size:20px}
+select,input,button{font:inherit;color:var(--tx);background:var(--cd);border:1px solid var(--bd);border-radius:6px;padding:6px 10px}
+button{cursor:pointer;background:var(--ac);color:#fff;border-color:var(--ac)}
+@media(prefers-color-scheme:dark){button{color:#05222a}}
+button.g{background:var(--cd);color:var(--tx);border-color:var(--bd)}button.r{background:var(--er);border-color:var(--er);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.tabs button{background:var(--cd);color:var(--tx);border-color:var(--bd)}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+@media(prefers-color-scheme:dark){.tabs button.on{color:#05222a}}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px;overflow-x:auto}
+h3{margin:0 0 10px;font-size:17px}h4{margin:16px 0 6px;font-size:15px}
+table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bd);font-size:14px}th{color:var(--mu);font-weight:500}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}.kpi{flex:1;min-width:140px;background:var(--ac2);border-radius:8px;padding:10px 12px}.kpi span{display:block;font-size:12px;color:var(--mu)}.kpi b{font-size:18px}
+.br{display:grid;grid-template-columns:100px 1fr 120px;gap:10px;align-items:center;margin:6px 0;font-size:14px}
+.tr{position:relative;height:12px;background:var(--bd);border-radius:6px}.tr i{position:absolute;left:0;top:0;bottom:0;background:var(--ac);border-radius:6px}.tr u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--wa)}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px}.w{background:var(--wb);color:var(--wa)}.e{background:var(--eb);color:var(--er)}.o{background:var(--ob);color:var(--ok)}
+.log{max-height:170px;overflow:auto;font:13px/1.6 ui-monospace,Consolas,monospace;color:var(--mu);margin-top:6px}
+#toast{position:sticky;top:8px;z-index:5;background:var(--er);color:#fff;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.mu{color:var(--mu);font-size:13px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const $=s=>document.querySelector(s),f=n=>Math.round(n).toLocaleString('vi-VN');
+const CL={TD:'Tiền gửi',BOND:'Trái phiếu',FUND:'Quỹ mở'};
+const TG={CONSERVATIVE:{TD:60,BOND:30,FUND:10},BALANCED:{TD:30,BOND:30,FUND:40},GROWTH:{TD:10,BOND:30,FUND:60}};
+const S={tab:1,cid:'C1',log:[],pend:[],alerts:[],props:[],seq:1,
+assets:{TD01:{n:'Tiền gửi 12 tháng',c:'TD',risk:1,price:1},B01:{n:'Trái phiếu VCB 2029',c:'BOND',risk:2,price:1000000},F01:{n:'Quỹ cổ phiếu VFE',c:'FUND',risk:4,price:12500},F02:{n:'Quỹ trái phiếu VFB',c:'FUND',risk:2,price:10800}},
+cus:{C1:{name:'Nguyễn Văn An',rm:'RM Lan',risk:'BALANCED',cash:100e6,led:[],h:[{a:'TD01',q:0,cost:0,pr:300e6,ac:2e6},{a:'B01',q:150,cost:990000,pr:0,ac:0},{a:'F01',q:30000,cost:11800,pr:0,ac:0}]},
+C2:{name:'Trần Thị Bình',rm:'RM Lan',risk:'CONSERVATIVE',cash:50e6,led:[],h:[{a:'TD01',q:0,cost:0,pr:400e6,ac:3e6},{a:'F02',q:20000,cost:10500,pr:0,ac:0}]}}};
+const now=()=>new Date().toLocaleTimeString('vi-VN');
+const lg=(a,t)=>S.log.unshift(now()+' · '+a+' · '+t);
+let tt;const T=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',3500)};
+const otp=()=>prompt('Nhập Smart OTP (demo: 123456)')==='123456'||(T('OTP sai hoặc đã hủy'),false);
+const val=c=>{let d=0,b=0,u=0,p=0;c.h.forEach(h=>{const a=S.assets[h.a];if(a.c=='TD'){d+=h.pr+h.ac;p+=h.ac}else{const v=h.q*a.price;p+=v-h.q*h.cost;a.c=='BOND'?b+=v:u+=v}});return{d,b,u,p,cash:c.cash,aum:c.cash+d+b+u}};
+const drift=(c)=>{const v=val(c),t=TG[c.risk],m={TD:v.d,BOND:v.b,FUND:v.u};return v.aum?Object.keys(m).map(k=>{const w=m[k]/v.aum*100,dev=+Math.abs(w-t[k]).toFixed(4);return{k,w,t:t[k],dev,amt:dev/100*v.aum,dir:t[k]>w?'TĂNG':'GIẢM'}}).filter(x=>x.dev>=5):[]};
+const bar=(k,w,t)=>`<div class=br><span>${CL[k]}</span><div class=tr><i style="width:${Math.min(w,100)}%"></i><u style="left:${t}%"></u></div><span>${w.toFixed(1)}% / mục tiêu ${t}%</span></div>`;
+
+function setRisk(){if(!otp())return;const c=S.cus[S.cid];c.risk=$('#rk').value;lg('RISK_PROFILE',c.name+' → '+c.risk+' (hiệu lực 12 tháng)');render()}
+function cash(t){const c=S.cus[S.cid],n=+$('#amt').value;if(!(n>0))return T('Số tiền phải lớn hơn 0');if(t=='W'&&n>c.cash)return T('Số dư không đủ để rút');if(!otp())return;c.cash+=t=='D'?n:-n;c.led.unshift([now(),t=='D'?'Nạp tiền (Core Banking)':'Rút tiền',(t=='D'?'+':'-')+f(n)]);lg(t=='D'?'DEPOSIT':'WITHDRAW',c.name+' '+f(n));render()}
+function setPrice(){const id=$('#pa').value,v=+$('#pv').value,a=S.assets[id];if(!(v>0))return T('Giá phải lớn hơn 0');const pct=Math.abs(v-a.price)/a.price*100;if(pct>20){S.pend.push({id:S.seq++,a:id,v,pct,prev:a.price});lg('INSERT_PRICE',id+' lệch '+pct.toFixed(1)+'% → PENDING_APPROVAL (BR-15)')}else{a.price=v;lg('INSERT_PRICE',id+' lệch '+pct.toFixed(1)+'% → APPLIED')}render()}
+function decide(i,ok){const p=S.pend.find(x=>x.id==i);if(ok)S.assets[p.a].price=p.v;S.pend=S.pend.filter(x=>x!=p);lg(ok?'APPROVE_PRICE':'REJECT_PRICE',p.a+' (Checker ≠ Maker)');render()}
+function job(){S.alerts=S.alerts.filter(a=>a.st=='ACTIONED');Object.entries(S.cus).forEach(([id,c])=>drift(c).forEach(d=>S.alerts.push({id:S.seq++,cid:id,...d,st:'NEW'})));lg('JOB_17:00','Chụp snapshot, sinh '+S.alerts.filter(a=>a.st=='NEW').length+' cảnh báo lệch (BR-16)');render()}
+function mk(i){const a=S.alerts.find(x=>x.id==i);a.st='ACTIONED';S.props.unshift({id:S.seq++,cid:a.cid,k:a.k,dir:a.dir,amt:a.amt,st:'CHỜ DUYỆT',msg:''});lg('CREATE_PROPOSAL','Từ cảnh báo '+i+' → UC-13');S.tab=4;render()}
+function pick(c,k,dir){const ids=Object.keys(S.assets).filter(x=>S.assets[x].c==k);if(dir=='GIẢM'){const h=ids.find(x=>c.h.some(y=>y.a==x&&(y.q>0||y.pr>0)));if(h)return h}return ids[0]}
+function run(i){const p=S.props.find(x=>x.id==i),c=S.cus[p.cid],sl=+$('#sl'+i).value;if(!otp())return;
+if(sl>5){p.st='FAILED';p.msg='Trượt giá '+sl+'% vượt 5%';lg('PROPOSAL_FAILED',p.msg);return render()}
+const id=pick(c,p.k,p.dir),as=S.assets[id];let h=c.h.find(x=>x.a==id);if(!h){h={a:id,q:0,cost:0,pr:0,ac:0};c.h.push(h)}
+if(p.dir=='TĂNG'){if(c.cash<p.amt){p.st='FAILED';p.msg='Không đủ tiền mặt';return render()}c.cash-=p.amt;if(as.c=='TD')h.pr+=p.amt;else{const q=p.amt/as.price;h.cost=(h.cost*h.q+p.amt)/(h.q+q);h.q+=q}}
+else{const max=as.c=='TD'?h.pr:h.q*as.price,a=Math.min(p.amt,max);if(as.c=='TD')h.pr-=a;else h.q-=a/as.price;c.cash+=a;p.amt=a}
+p.st='EXECUTED';p.msg=(p.dir=='TĂNG'?'Mua ':'Bán ')+f(p.amt)+' đ '+as.n;c.led.unshift([now(),p.msg,(p.dir=='TĂNG'?'-':'+')+f(p.amt)]);lg('EXECUTE',p.msg+' (UC-16, ghi holding, gọi lại UC-11)');render()}
+
+const p1=c=>`<h3>Khách hàng và hồ sơ rủi ro (UC-01, UC-02)</h3><table><tr><th>Khách<th>RM phụ trách<th>Hồ sơ rủi ro<th>Tỷ trọng mục tiêu</tr>${Object.values(S.cus).map(x=>`<tr><td>${x.name}<td>${x.rm}<td><span class="tag o">${x.risk}</span><td>${Object.entries(TG[x.risk]).map(([k,v])=>CL[k]+' '+v+'%').join(', ')}</tr>`).join('')}</table>
+<div class=row>Khảo sát lại cho <b>${c.name}</b>: <select id=rk>${Object.keys(TG).map(k=>`<option ${k==c.risk?'selected':''}>${k}</option>`).join('')}</select><button onclick="setRisk()">Xác nhận bằng OTP</button></div><p class=mu>Tỷ trọng mục tiêu của hồ sơ rủi ro là đầu vào để Phân hệ 3 phát hiện lệch (giao tiếp I-07). Đổi hồ sơ rồi sang Phân hệ 3 chạy Job để xem cảnh báo thay đổi.</p>`;
+const p2=c=>`<h3>Tài khoản đầu tư (UC-05, UC-06)</h3><div class=kpis><div class=kpi><span>Số dư tiền mặt</span><b>${f(c.cash)} đ</b></div></div><div class=row><input id=amt type=number min=0 placeholder="Số tiền (VND)"><button onclick="cash('D')">Nạp tiền</button><button class=g onclick="cash('W')">Rút tiền</button></div><table><tr><th>Thời gian<th>Nội dung<th>Số tiền (đ)</tr>${c.led.map(x=>`<tr><td>${x[0]}<td>${x[1]}<td>${x[2]}</tr>`).join('')||'<tr><td colspan=3 class=mu>Chưa có giao dịch. Hãy nạp tiền thử.</tr>'}</table>`;
+const p3=c=>{const v=val(c),t=TG[c.risk];return`<h3>Sản phẩm và định giá danh mục (UC-09 đến UC-12)</h3>
+<div class=kpis><div class=kpi><span>AUM (BR-17)</span><b>${f(v.aum)} đ</b></div><div class=kpi><span>Lãi/lỗ chưa thực hiện</span><b>${f(v.p)} đ</b></div><div class=kpi><span>Tiền mặt</span><b>${f(v.cash)} đ</b></div></div>
+${bar('TD',v.d/v.aum*100,t.TD)}${bar('BOND',v.b/v.aum*100,t.BOND)}${bar('FUND',v.u/v.aum*100,t.FUND)}<p class=mu>Vạch cam là tỷ trọng mục tiêu của hồ sơ ${c.risk}. Tiền mặt không thuộc nhóm có mục tiêu.</p>
+<h4>Danh mục sản phẩm</h4><table><tr><th>Mã<th>Tên<th>Nhóm<th>Rủi ro (1–5)<th>Giá/NAV hiện tại</tr>${Object.entries(S.assets).map(([k,a])=>`<tr><td>${k}<td>${a.n}<td>${CL[a.c]}<td>${a.risk}<td>${f(a.price)}</tr>`).join('')}</table>
+<h4>Nhập giá (Maker)</h4><div class=row><select id=pa>${Object.entries(S.assets).filter(([k,a])=>a.c!='TD').map(([k,a])=>`<option value=${k}>${k} · ${a.n}</option>`).join('')}</select><input id=pv type=number placeholder="Giá mới"><button onclick="setPrice()">Nhập giá</button></div><p class=mu>Thử nhập lệch dưới 20% (áp dụng ngay) và trên 20% (chờ duyệt).</p>
+${S.pend.length?`<h4>Chờ Checker duyệt</h4><table>${S.pend.map(p=>`<tr><td>${p.a}<td>${f(p.prev)} → ${f(p.v)}<td><span class="tag w">${p.pct.toFixed(1)}%</span><td><button onclick="decide(${p.id},true)">Duyệt</button> <button class=r onclick="decide(${p.id},false)">Từ chối</button></tr>`).join('')}</table>`:''}
+<h4>Cảnh báo lệch tỷ trọng (RM)</h4><div class=row><button onclick="job()">Chạy Job 17:00</button><span class=mu>Quét mọi khách, sinh cảnh báo khi lệch từ 5 điểm phần trăm.</span></div>
+<table>${S.alerts.map(a=>`<tr><td>${S.cus[a.cid].name}<td>${CL[a.k]}<td>${a.w.toFixed(1)}% / ${a.t}%<td><span class="tag ${a.st=='NEW'?'w':'o'}">${a.st}</span><td>${a.st=='NEW'?`<button onclick="mk(${a.id})">Tạo đề xuất tái cân bằng</button>`:''}</tr>`).join('')||'<tr><td class=mu>Chưa có cảnh báo. Bấm Chạy Job 17:00.</tr>'}</table>`};
+const p4=c=>`<h3>Đề xuất và giao dịch (UC-13 đến UC-16)</h3><p class=mu>Đề xuất sinh từ cảnh báo ở Phân hệ 3. Chọn mức trượt giá NAV mô phỏng; trên 5% thì lệnh thất bại. Khớp thành công sẽ cập nhật holding và định giá lại.</p>
+${S.props.map(p=>`<div class=card style="margin:8px 0"><b>${S.cus[p.cid].name}</b> · ${p.dir} ${CL[p.k]} ${f(p.amt)} đ <span class="tag ${p.st=='EXECUTED'?'o':p.st=='FAILED'?'e':'w'}">${p.st}</span> ${p.msg?`<div class=mu>${p.msg}</div>`:''}${p.st=='CHỜ DUYỆT'?`<div class=row>Trượt giá NAV: <select id=sl${p.id}><option value=0>0%</option><option value=3>3%</option><option value=6>6%</option></select><button onclick="run(${p.id})">Khách duyệt bằng OTP</button></div>`:''}</div>`).join('')||'<p class=mu>Chưa có đề xuất. Sang Phân hệ 3, chạy Job 17:00 rồi bấm Tạo đề xuất tái cân bằng.</p>'}`;
+
+function render(){const c=S.cus[S.cid];$('#app').innerHTML=`<div id=toast role=alert></div><div class=top><b>WMS Demo · dữ liệu giả lập trong bộ nhớ</b><label>Khách hàng <select onchange="S.cid=this.value;render()">${Object.entries(S.cus).map(([k,v])=>`<option value=${k} ${k==S.cid?'selected':''}>${v.name}</option>`).join('')}</select></label></div>
+<div class=tabs>${['Phân hệ 1 · Khách hàng','Phân hệ 2 · Tài khoản','Phân hệ 3 · Sản phẩm và định giá','Phân hệ 4 · Đề xuất và giao dịch'].map((t,i)=>`<button class="${S.tab==i+1?'on':''}" onclick="S.tab=${i+1};render()">${t}</button>`).join('')}</div>
+<div class=card>${[0,p1,p2,p3,p4][S.tab](c)}</div><div class=card><b>Audit log (chỉ thêm)</b><div class=log>${S.log.map(x=>`<div>${x}</div>`).join('')||'Chưa có sự kiện'}</div></div>`}
+render();
+</script>
+</body>
+</html>
